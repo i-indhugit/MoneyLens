@@ -1,4 +1,4 @@
-# MoneyLens AI — Personal Expense & Financial Insights Assistant
+# MoneyLens AI — Vercel & Mobile-First Personal Expense Assistant
 
 > **Tagline:** Understand your money. Make better decisions.
 
@@ -8,100 +8,101 @@ The entire application runs **100% locally with zero paid services or external A
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Architectural Features
 
-- **Professional Fintech SaaS UI**: Light gray background, deep navy primary, slate text, teal accents, and financial metric hierarchy.
-- **Single-Application Deployment**: FastAPI serves the built React static frontend at `/` so the application deploys on one single web URL.
-- **PWA & Android APK**: Built with Progressive Web App manifest and Capacitor (`com.moneylens.ai`) to generate installable Android APKs.
-- **CSV Import Validation**: Robust CSV parser with error detection for missing Amount columns or malformed files.
-- **Keyword Categorization**: Case-insensitive Python categorizer mapping transactions to `Food`, `Travel`, `Shopping`, `Entertainment`, `Bills`, `Healthcare`, `Housing`, `Education`, `Income`, and `Other`.
-- **Pandas Analytics**: Automated calculation of Total Income, Total Expenses, Balance, Average Expense, Highest Expense, Top Spending Category, and Monthly Spending Trends.
-- **IsolationForest Anomaly Detection**: Scikit-Learn machine learning outlier detection to flag unusual transactions safely.
-- **MoneyLens Insights & Money Health**: Automated rule-based financial insights engine.
-- **Ask MoneyLens Assistant**: Local keyword intent matching question interface.
-- **Privacy Guarantee**: 100% local processing with full data deletion support.
+- **Single Vercel Project Architecture**: Built with Vite React + TypeScript frontend and FastAPI Python backend using Vercel Serverless Functions (`api/index.py` & `vercel.json`).
+- **Configurable API Routes**: Uses `/api/...` relative endpoint routes for Vercel deployment and dynamic `VITE_API_BASE_URL` for native Android WebView builds.
+- **Vercel-Compatible Database Isolation**: Database access isolated in `backend/database.py` with automatic `/tmp/moneylens.db` fallback for Vercel serverless functions.
+- **PWA Installation Experience**: Full Progressive Web App web manifest (`manifest.json`) and "Install MoneyLens App" experience on the Settings page.
+- **Capacitor Android Packaging**: Native Android project configured (`com.moneylens.ai`) generating `MoneyLens-AI-debug.apk` without requiring Google Play Store publication.
+- **Zero Paid / External AI APIs**: Rule-based Python categorizer, Pandas financial analytics, and Scikit-Learn IsolationForest anomaly detection running 100% local.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Local Development
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS, Vite, Recharts, Lucide Icons, PWA Support.
-- **Mobile Packaging**: Capacitor Android (`@capacitor/core`, `@capacitor/android`, `@capacitor/cli`).
-- **Backend**: Python 3.12, FastAPI, Pandas, Scikit-Learn, SQLAlchemy, SQLite (`moneylens.db`).
-- **Testing**: Pytest unit & API test suite.
-
----
-
-## 🚀 Quick Setup & Local Execution
-
-### 1. Prerequisites
-- Python 3.10+
-- Node.js 18+ and `npm`
-
-### 2. Backend Setup
+### 1. Frontend Setup & Execution
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run FastAPI server
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-### 3. Frontend Development Server
-```bash
-# Open a new terminal and navigate to frontend directory
+# Navigate to frontend folder
 cd frontend
 
-# Install npm dependencies
+# Install Node dependencies
 npm install
 
-# Run Vite dev server
+# Start Vite local development server
 npm run dev
 ```
-Open `http://localhost:5173/` in your browser.
+
+### 2. Backend Setup & Execution
+```bash
+# Navigate to backend folder
+cd backend
+
+# Install Python requirements
+pip install -r requirements.txt
+
+# Start FastAPI dev server with auto-reload
+python -m uvicorn main:app --reload
+```
 
 ---
 
-## 📱 Building Single App Deployment & Android APK
+## 🚀 Vercel Deployment Instructions
 
-### Single Web Application Build
-To serve the frontend directly from FastAPI on a single port (`http://127.0.0.1:8000/`):
+Deploying MoneyLens AI on Vercel is completely free and requires zero complex configuration:
+
+1. Push your latest code to GitHub (`https://github.com/i-indhugit/MoneyLens.git`).
+2. Log into **[https://vercel.com](https://vercel.com)** and click **Add New...** → **Project**.
+3. Import your **`i-indhugit/MoneyLens`** repository.
+4. Vercel automatically detects `vercel.json`:
+   - **Framework Preset**: Vite
+   - **Build Command**: `cd frontend && npm install && npm run build`
+   - **Output Directory**: `frontend/dist`
+5. Click **Deploy**.
+
+Vercel will deploy your React frontend and expose your FastAPI backend serverless endpoints at `https://YOUR-PROJECT.vercel.app/api/...`.
+
+---
+
+## 📱 Progressive Web App (PWA) Installation
+
+1. Open your deployed Vercel URL on your mobile phone or desktop browser.
+2. Navigate to **Settings**.
+3. Tap **Install App** (or use Chrome's "Add to Home Screen" / Safari's "Share -> Add to Home Screen").
+4. MoneyLens AI will install directly to your home screen as a standalone application.
+
+---
+
+## 🤖 Android APK Generation & Personal Installation
+
+You can generate the Android `.apk` file locally and install it directly on any Android phone for testing without publishing to Google Play Store:
+
 ```bash
+# 1. Build React production bundle
 cd frontend
 npm run build
-```
-FastAPI automatically detects `frontend/dist` and serves the static files at `/` with API endpoints routed under `/api/...`.
 
-### Building Android APK (Capacitor)
-```bash
-cd frontend
-
-# 1. Build web production bundle
-npm run build
-
-# 2. Sync build with native Android project
+# 2. Sync web assets with native Android project
 npx cap sync android
 
-# 3. Open project in Android Studio to build APK
-npx cap open android
+# 3. Compile debug APK using Gradle wrapper
+cd android
+.\gradlew assembleDebug
 ```
+
+The compiled APK will be located at:
+`frontend/android/app/build/outputs/apk/debug/app-debug.apk` (and copied to `MoneyLens-AI-debug.apk` in project root).
+
+### Installing on Android Phone:
+1. Transfer `MoneyLens-AI-debug.apk` to your phone via USB, Google Drive, or messaging.
+2. Tap the `.apk` file on your phone and select **Install**.
+3. Open **MoneyLens AI** from your phone app launcher!
 
 ---
 
-## 🧪 Running Automated Tests
+## 🧪 Testing & Verification
 
 ```bash
-# Run pytest backend suite
+# Run pytest test suite
 python -m pytest backend/tests
 ```
-
----
-
-## 🔒 Privacy Guarantee
-
-MoneyLens AI MVP does not use external AI APIs or remote LLMs. All financial calculations, categorizations, insights, and anomaly detections are performed locally using Python, Pandas, Scikit-learn, and rule-based application logic.
-
-No bank credentials, card numbers, or API keys are ever requested or transmitted.
