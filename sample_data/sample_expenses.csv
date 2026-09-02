@@ -1,0 +1,19 @@
+Date,Description,Amount,Type,Category
+2026-09-01,TechCorp Salary,30000,income,Income
+2026-09-01,House Rent,8500,expense,Housing
+2026-09-02,Swiggy Food,450,expense,Food
+2026-09-02,Uber Ride,250,expense,Travel
+2026-09-03,Amazon Electronics,1200,expense,Shopping
+2026-09-04,Electricity Bill,900,expense,Bills
+2026-09-04,Netflix Subscription,199,expense,Entertainment
+2026-09-05,Zomato Dinner,350,expense,Food
+2026-09-06,Apollo Pharmacy Medicines,420,expense,Healthcare
+2026-09-07,BigBasket Groceries,1800,expense,Food
+2026-09-08,Ola Auto,180,expense,Travel
+2026-09-09,Flipkart Clothes,2100,expense,Shopping
+2026-09-10,Udemy Course,499,expense,Education
+2026-09-12,Swiggy Lunch,280,expense,Food
+2026-09-14,Airtel Broadband,799,expense,Bills
+2026-09-15,Starbucks Coffee,320,expense,Food
+2026-09-18,PVR Cinema Tickets,600,expense,Entertainment
+2026-09-20,High-End Luxury Watch,18500,expense,Shopping
