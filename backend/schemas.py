@@ -17,6 +17,7 @@ class TransactionResponse(TransactionBase):
     date: str
     category: str
     transaction_type: str
+    is_unusual: bool = False
     created_at: Optional[datetime] = None
 
     class Config:
@@ -28,6 +29,7 @@ class SummaryResponse(BaseModel):
     remaining_balance: float
     average_expense: float
     highest_expense: Optional[Dict[str, Any]] = None
+    top_spending_category: Optional[str] = None
     transaction_count: int
 
 class CategorySpending(BaseModel):
@@ -55,9 +57,9 @@ class AnomalyResponse(BaseModel):
     anomalies: List[AnomalyItem]
     message: Optional[str] = None
 
-class MoneyMoodSchema(BaseModel):
-    mood: str
-    description: str
+class MoneyHealthSchema(BaseModel):
+    status: str
+    summary: str
 
 class InsightItem(BaseModel):
     type: str
@@ -65,7 +67,7 @@ class InsightItem(BaseModel):
     description: str
 
 class InsightsResponse(BaseModel):
-    money_mood: MoneyMoodSchema
+    money_health: MoneyHealthSchema
     insights: List[InsightItem]
 
 class AskRequest(BaseModel):

@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Query
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Query, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
@@ -9,28 +10,30 @@ from database import engine, get_db
 from models import Base, DBTransaction
 from schemas import (
     TransactionCreate, TransactionResponse, SummaryResponse,
-    AnomalyResponse, InsightsResponse, AskRequest, AskResponse, GeneralMessage
+    CategorySpending, MonthlySpending, AnomalyResponse,
+    InsightsResponse, AskRequest, AskResponse, GeneralMessage
 )
 from services.csv_parser import parse_csv_file
 from services.categorizer import categorize_transaction
 from services.analytics import (
     db_txs_to_df, get_total_income, get_total_expenses, get_remaining_balance,
-    get_average_expense, get_highest_expense, get_category_spending, get_monthly_spending
+    get_average_expense, get_highest_expense, get_category_spending,
+    get_top_spending_category, get_monthly_spending
 )
 from services.anomaly_detector import detect_unusual_transactions
 from services.insights import generate_financial_insights
 from services.question_engine import answer_user_question
 
-# Initialize database tables on startup
+# Initialize SQLite database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="MoneyLens AI MVP API",
-    description="100% API-Free, Privacy-First Personal Expense Analysis API",
-    version="2.0.0"
+    title="MoneyLens AI API",
+    description="Mobile-First Personal Expense & Financial Insights API",
+    version="2.5.0"
 )
 
-# Configure CORS for local development
+# CORS middleware for local frontend dev server & PWA
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,17 +42,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def root():
+# Router for all backend API endpoints (/api/...)
+api_router = APIRouter(prefix="/api")
+
+@api_router.get("/")
+def api_root():
     return {
         "status": "online",
-        "app": "MoneyLens AI MVP",
-        "privacy": "MoneyLens AI is 100% local and API-free. No external AI APIs or credentials required."
+        "app": "MoneyLens AI",
+        "tagline": "Understand your money. Make better decisions.",
+        "privacy": "MoneyLens AI is 100% local and API-free. Zero external AI services or bank keys required."
     }
 
 # 1. Transactions API
 
-@app.post("/transactions/upload", response_model=List[TransactionResponse])
+@api_router.post("/transactions/upload", response_model=List[TransactionResponse])
 async def upload_csv_transactions(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be a .csv file format.")
@@ -58,81 +65,79 @@ async def upload_csv_transactions(file: UploadFile = File(...), db: Session = De
     try:
         parsed_records = parse_csv_file(content)
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=422, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Failed to parse CSV file. Please check file format.")
+        raise HTTPException(status_code=400, detail=f"Failed to process CSV file: {str(e)}")
 
     db_objs = []
     for item in parsed_records:
-        obj = DBTransaction(
+        db_objs.append(DBTransaction(
             date=item["date"],
             description=item["description"],
             amount=item["amount"],
             transaction_type=item["transaction_type"],
             category=item["category"]
-        )
-        db_objs.append(obj)
+        ))
 
     db.bulk_save_objects(db_objs)
     db.commit()
 
     return db.query(DBTransaction).order_by(DBTransaction.date.desc()).all()
 
-@app.post("/transactions", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
-def add_single_transaction(tx_in: TransactionCreate, db: Session = Depends(get_db)):
-    if tx_in.amount <= 0:
-        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+@api_router.post("/transactions", response_model=TransactionResponse)
+def add_transaction(payload: TransactionCreate, db: Session = Depends(get_db)):
+    if payload.amount <= 0:
+        raise HTTPException(status_code=422, detail="Transaction amount must be greater than 0.")
 
-    # Assign category automatically if omitted
-    final_cat = tx_in.category if tx_in.category and tx_in.category.strip() else categorize_transaction(tx_in.description, tx_in.transaction_type or "expense")
-    date_str = tx_in.date if tx_in.date else pd.Timestamp.now().strftime("%Y-%m-%d")
+    category = payload.category
+    if not category or category.strip() == "" or category.lower() == "auto detect":
+        category = categorize_transaction(payload.description, payload.transaction_type or "expense")
 
-    db_tx = DBTransaction(
-        date=date_str,
-        description=tx_in.description,
-        amount=tx_in.amount,
-        transaction_type=tx_in.transaction_type or "expense",
-        category=final_cat
+    new_tx = DBTransaction(
+        description=payload.description.strip(),
+        amount=float(payload.amount),
+        date=payload.date,
+        transaction_type=payload.transaction_type or "expense",
+        category=category
     )
-    db.add(db_tx)
-    db.commit()
-    db.refresh(db_tx)
-    return db_tx
 
-@app.get("/transactions", response_model=List[TransactionResponse])
+    db.add(new_tx)
+    db.commit()
+    db.refresh(new_tx)
+    return new_tx
+
+@api_router.get("/transactions", response_model=List[TransactionResponse])
 def list_transactions(
-    search: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
+    search: Optional[str] = None,
+    category: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    txs = db.query(DBTransaction).order_by(DBTransaction.date.desc()).all()
-
+    query = db.query(DBTransaction)
     if search:
-        s = search.lower()
-        txs = [t for t in txs if s in t.description.lower() or s in t.category.lower()]
+        query = query.filter(DBTransaction.description.ilike(f"%{search}%"))
+    if category and category.lower() != "all":
+        query = query.filter(DBTransaction.category.ilike(category))
 
-    if category and category != "All":
-        txs = [t for t in txs if t.category.lower() == category.lower()]
+    return query.order_by(DBTransaction.date.desc()).all()
 
-    return txs
-
-@app.delete("/transactions/{tx_id}", response_model=GeneralMessage)
-def delete_single_transaction(tx_id: str, db: Session = Depends(get_db)):
-    tx = db.query(DBTransaction).filter(DBTransaction.id == tx_id).first()
+@api_router.delete("/transactions/{transaction_id}", response_model=GeneralMessage)
+def delete_transaction(transaction_id: str, db: Session = Depends(get_db)):
+    tx = db.query(DBTransaction).filter(DBTransaction.id == transaction_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction record not found.")
+
     db.delete(tx)
     db.commit()
-    return GeneralMessage(message="Transaction successfully deleted.", success=True)
+    return GeneralMessage(message="Transaction record deleted successfully.", success=True)
 
-@app.delete("/transactions", response_model=GeneralMessage)
+@api_router.delete("/transactions", response_model=GeneralMessage)
 def delete_all_transactions(db: Session = Depends(get_db)):
     db.query(DBTransaction).delete()
     db.commit()
-    return GeneralMessage(message="All transaction records have been permanently deleted.", success=True)
+    return GeneralMessage(message="All transactions have been permanently deleted.", success=True)
 
-@app.post("/transactions/sample-data", response_model=List[TransactionResponse])
-def import_sample_data(db: Session = Depends(get_db)):
+@api_router.post("/transactions/sample-data", response_model=List[TransactionResponse])
+def load_sample_data(db: Session = Depends(get_db)):
     possible_paths = [
         os.path.join(os.getcwd(), "sample_data", "sample_expenses.csv"),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sample_data", "sample_expenses.csv"),
@@ -148,15 +153,18 @@ def import_sample_data(db: Session = Depends(get_db)):
 
     parsed = parse_csv_file(content)
 
-    db_objs = []
-    for item in parsed:
-        db_objs.append(DBTransaction(
+    db.query(DBTransaction).delete()
+    db.commit()
+
+    db_objs = [
+        DBTransaction(
             date=item["date"],
             description=item["description"],
             amount=item["amount"],
             transaction_type=item["transaction_type"],
             category=item["category"]
-        ))
+        ) for item in parsed
+    ]
 
     db.bulk_save_objects(db_objs)
     db.commit()
@@ -165,45 +173,68 @@ def import_sample_data(db: Session = Depends(get_db)):
 
 # 2. Financial Analytics API
 
-@app.get("/analytics/summary", response_model=SummaryResponse)
+@api_router.get("/analytics/summary", response_model=SummaryResponse)
 def get_analytics_summary(db: Session = Depends(get_db)):
     txs = db.query(DBTransaction).all()
     df = db_txs_to_df(txs)
+
     return SummaryResponse(
         total_income=get_total_income(df),
         total_expenses=get_total_expenses(df),
         remaining_balance=get_remaining_balance(df),
         average_expense=get_average_expense(df),
         highest_expense=get_highest_expense(df),
-        transaction_count=len(txs)
+        top_spending_category=get_top_spending_category(df),
+        transaction_count=len(df)
     )
 
-@app.get("/analytics/categories")
-def get_categories_breakdown(db: Session = Depends(get_db)):
+@api_router.get("/analytics/categories")
+def get_category_analytics(db: Session = Depends(get_db)):
     txs = db.query(DBTransaction).all()
     df = db_txs_to_df(txs)
     return get_category_spending(df)
 
-@app.get("/analytics/monthly")
-def get_monthly_breakdown(db: Session = Depends(get_db)):
+@api_router.get("/analytics/monthly", response_model=List[MonthlySpending])
+def get_monthly_analytics(db: Session = Depends(get_db)):
     txs = db.query(DBTransaction).all()
     df = db_txs_to_df(txs)
     return get_monthly_spending(df)
 
-@app.get("/analytics/anomalies", response_model=AnomalyResponse)
-def get_unusual_spending(db: Session = Depends(get_db)):
+@api_router.get("/analytics/anomalies", response_model=AnomalyResponse)
+def get_anomaly_analytics(db: Session = Depends(get_db)):
     txs = db.query(DBTransaction).all()
     res = detect_unusual_transactions(txs)
     return AnomalyResponse(**res)
 
-@app.get("/insights", response_model=InsightsResponse)
+@api_router.get("/insights", response_model=InsightsResponse)
 def get_financial_insights(db: Session = Depends(get_db)):
     txs = db.query(DBTransaction).all()
     res = generate_financial_insights(txs)
     return InsightsResponse(**res)
 
-@app.post("/ask", response_model=AskResponse)
+@api_router.post("/ask", response_model=AskResponse)
 def ask_question(payload: AskRequest, db: Session = Depends(get_db)):
     txs = db.query(DBTransaction).all()
-    res = answer_user_question(payload.question, txs)
+    tx_dicts = [
+        {
+            "id": t.id,
+            "date": t.date,
+            "description": t.description,
+            "amount": t.amount,
+            "transaction_type": t.transaction_type,
+            "category": t.category,
+            "is_unusual": t.is_unusual
+        }
+        for t in txs
+    ]
+
+    res = answer_user_question(payload.question, tx_dicts)
     return AskResponse(**res)
+
+# Register /api router
+app.include_router(api_router)
+
+# Serve built production React frontend dist files at / if built
+frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")

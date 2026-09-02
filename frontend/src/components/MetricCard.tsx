@@ -1,73 +1,51 @@
 import React from 'react';
-import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
   value: string;
   subtext?: string;
-  changePct?: number;
   icon: LucideIcon;
-  color?: 'blue' | 'emerald' | 'rose' | 'amber' | 'indigo';
+  color?: 'navy' | 'emerald' | 'rose' | 'teal' | 'amber';
 }
+
+const COLOR_MAP = {
+  navy: { bg: 'bg-slate-50', text: 'text-slate-900', iconBg: 'bg-slate-100 text-slate-700' },
+  emerald: { bg: 'bg-emerald-50/50', text: 'text-emerald-700', iconBg: 'bg-emerald-100 text-emerald-700' },
+  rose: { bg: 'bg-rose-50/50', text: 'text-rose-700', iconBg: 'bg-rose-100 text-rose-700' },
+  teal: { bg: 'bg-teal-50/50', text: 'text-teal-700', iconBg: 'bg-teal-100 text-teal-700' },
+  amber: { bg: 'bg-amber-50/50', text: 'text-amber-700', iconBg: 'bg-amber-100 text-amber-700' },
+};
 
 export const MetricCard: React.FC<MetricCardProps> = ({
   title,
   value,
   subtext,
-  changePct,
   icon: Icon,
-  color = 'blue'
+  color = 'navy'
 }) => {
-  const colorMap = {
-    blue: 'from-blue-500/10 to-blue-600/5 text-blue-400 border-blue-500/20',
-    emerald: 'from-emerald-500/10 to-emerald-600/5 text-emerald-400 border-emerald-500/20',
-    rose: 'from-rose-500/10 to-rose-600/5 text-rose-400 border-rose-500/20',
-    amber: 'from-amber-500/10 to-amber-600/5 text-amber-400 border-amber-500/20',
-    indigo: 'from-indigo-500/10 to-indigo-600/5 text-indigo-400 border-indigo-500/20',
-  };
-
-  const iconBgMap = {
-    blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-  };
+  const styles = COLOR_MAP[color] || COLOR_MAP.navy;
 
   return (
-    <div className={`glass-card glass-card-hover rounded-2xl p-5 bg-gradient-to-br ${colorMap[color]}`}>
+    <div className={`fintech-card p-5 space-y-3 ${styles.bg}`}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           {title}
         </span>
-        <div className={`p-2.5 rounded-xl border ${iconBgMap[color]}`}>
-          <Icon className="w-5 h-5" />
+        <div className={`p-2 rounded-xl ${styles.iconBg}`}>
+          <Icon className="w-4 h-4" />
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+      <div>
+        <div className={`text-2xl font-black tracking-tight ${styles.text}`}>
           {value}
         </div>
-        
-        <div className="mt-2 flex items-center justify-between">
-          {subtext && (
-            <p className="text-xs text-slate-400 font-medium">
-              {subtext}
-            </p>
-          )}
-
-          {changePct !== undefined && (
-            <div className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-              changePct >= 0
-                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-            }`}>
-              {changePct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              <span>{Math.abs(changePct)}%</span>
-            </div>
-          )}
-        </div>
+        {subtext && (
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            {subtext}
+          </p>
+        )}
       </div>
     </div>
   );

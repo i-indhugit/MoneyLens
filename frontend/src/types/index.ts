@@ -5,6 +5,7 @@ export interface Transaction {
   amount: number;
   transaction_type: 'expense' | 'income';
   category: string;
+  is_unusual?: boolean;
   created_at?: string;
 }
 
@@ -20,6 +21,7 @@ export interface SummaryResponse {
     amount: number;
     category: string;
   };
+  top_spending_category?: string;
   transaction_count: number;
 }
 
@@ -57,9 +59,9 @@ export interface AnomalyResponse {
   message?: string;
 }
 
-export interface MoneyMood {
-  mood: string;
-  description: string;
+export interface MoneyHealth {
+  status: string;
+  summary: string;
 }
 
 export interface InsightItem {
@@ -69,7 +71,7 @@ export interface InsightItem {
 }
 
 export interface InsightsResponse {
-  money_mood: MoneyMood;
+  money_health: MoneyHealth;
   insights: InsightItem[];
 }
 

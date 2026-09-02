@@ -8,7 +8,8 @@ import {
   AskResponse
 } from '../types';
 
-const API_BASE = 'http://127.0.0.1:8000';
+// Use relative /api endpoint path so it works seamlessly on both web server and Android Capacitor PWA
+const API_BASE = '/api';
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -72,7 +73,7 @@ export const api = {
     return handleResponse<{ message: string; success: boolean }>(res);
   },
 
-  // Reset Sample Data
+  // Load Sample Data
   loadSampleData: async (): Promise<Transaction[]> => {
     const res = await fetch(`${API_BASE}/transactions/sample-data`, {
       method: 'POST',

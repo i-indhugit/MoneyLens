@@ -9,7 +9,7 @@ from services.analytics import (
     get_category_spending, get_monthly_spending
 )
 from services.anomaly_detector import detect_unusual_transactions
-from services.insights import generate_financial_insights, calculate_money_mood
+from services.insights import generate_financial_insights, calculate_money_health
 from services.question_engine import answer_user_question
 
 client = TestClient(app)
@@ -52,15 +52,15 @@ def test_analytics_math():
     assert get_total_expenses(df) == 1650.0
     assert get_remaining_balance(df) == 28350.0
 
-def test_money_mood_engine():
+def test_money_health_engine():
     txs = [
         {"id": "1", "date": "2026-09-01", "description": "Salary", "amount": 30000.0, "transaction_type": "income", "category": "Income"},
         {"id": "2", "date": "2026-09-02", "description": "Rent", "amount": 8500.0, "transaction_type": "expense", "category": "Housing"},
     ]
     df = db_txs_to_df(txs)
-    mood_res = calculate_money_mood(df)
-    assert "mood" in mood_res
-    assert "Balanced" in mood_res["mood"]
+    health = calculate_money_health(df)
+    assert "status" in health
+    assert "Healthy" in health["status"] or "Balanced" in health["status"]
 
 def test_question_engine():
     txs = [
@@ -75,10 +75,10 @@ def test_question_engine():
     assert "₹29,550.00" in q2["answer"]
 
 def test_api_endpoints():
-    res = client.get("/")
+    res = client.get("/api/")
     assert res.status_code == 200
-    assert "MoneyLens AI MVP" in res.json()["app"]
+    assert "MoneyLens AI" in res.json()["app"]
 
-    res_insights = client.get("/insights")
+    res_insights = client.get("/api/insights")
     assert res_insights.status_code == 200
-    assert "money_mood" in res_insights.json()
+    assert "money_health" in res_insights.json()

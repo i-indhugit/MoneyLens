@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ShieldCheck, PieChart, TrendingUp, AlertCircle } from 'lucide-react';
+import { Sparkles, ShieldCheck, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { InsightsResponse } from '../types';
 
 interface InsightsPageProps {
@@ -15,9 +15,9 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({
   onLoadSample,
   loadingSample
 }) => {
-  const moneyMood = insights?.money_mood || {
-    mood: '🌿 Balanced',
-    description: 'Your spending is currently under control.'
+  const moneyHealth = insights?.money_health || {
+    status: 'Stable',
+    summary: 'Your overall personal expenses are tracked and balanced.'
   };
 
   const list = insights?.insights || [];
@@ -25,45 +25,47 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-20 md:pb-8">
       {/* Header */}
-      <div className="border-b border-[#ebdcd0]/60 pb-4">
-        <h1 className="text-2xl font-black text-[#1f2937] tracking-tight flex items-center gap-2">
-          <span>✦</span> MoneyLens Financial Insights
+      <div className="border-b border-slate-200 pb-4">
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-teal-600" />
+          <span>MoneyLens Insights & Money Health</span>
         </h1>
-        <p className="text-xs text-[#6b7280] font-medium mt-0.5">
-          Rule-based spending insights and Money Mood engine generated 100% locally with Python.
+        <p className="text-xs text-slate-500 font-medium mt-0.5">
+          Automated rule-based financial insights and Money Health summary computed locally with Python.
         </p>
       </div>
 
-      {/* Money Mood Card */}
-      <div className="pin-card pastel-yellow rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
-        <div className="text-xs font-extrabold uppercase tracking-wider text-[#856404]">
-          Your Current Money Mood
+      {/* Money Health Summary Banner */}
+      <div className="fintech-card p-6 bg-slate-900 text-white space-y-3">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <span>Money Health Status</span>
+          <ShieldCheck className="w-4 h-4 text-teal-400" />
         </div>
-        <div className="text-3xl font-black text-[#1f2937]">
-          {moneyMood.mood}
+        <div className="text-2xl font-black text-white">
+          {moneyHealth.status}
         </div>
-        <p className="text-xs sm:text-sm text-[#856404] leading-relaxed font-medium">
-          {moneyMood.description}
+        <p className="text-xs text-slate-300 leading-relaxed font-medium">
+          {moneyHealth.summary}
         </p>
       </div>
 
-      {/* Financial Insights List */}
+      {/* MoneyLens Insights List */}
       <div className="space-y-4">
-        <h3 className="text-sm font-extrabold text-[#1f2937] uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-[#5c3882]" /> Spending Discovery Pins
+        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-teal-600" /> Automated Financial Insights
         </h3>
 
         {list.length === 0 ? (
-          <div className="pastel-cream rounded-3xl p-8 text-center space-y-3 border border-[#ebdcd0]">
-            <p className="text-xs text-[#6b7280]">
-              No transactions recorded yet. Add expenses to unlock financial insights.
+          <div className="fintech-card p-8 text-center space-y-3">
+            <p className="text-xs text-slate-500 font-medium">
+              No expense records found. Import data or log expenses to generate automated financial insights.
             </p>
             <button
               onClick={onLoadSample}
               disabled={loadingSample}
-              className="px-5 py-2.5 rounded-full bg-[#1f2937] text-white text-xs font-bold shadow-md min-h-[44px]"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-sm min-h-[44px]"
             >
-              Try Sample Data
+              Load Sample Data
             </button>
           </div>
         ) : (
@@ -71,12 +73,13 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({
             {list.map((item, idx) => (
               <div
                 key={idx}
-                className="pin-card pastel-cream rounded-3xl p-6 border border-[#ebdcd0] space-y-2 shadow-sm"
+                className="fintech-card p-5 space-y-2"
               >
-                <div className="text-base font-extrabold text-[#1f2937] flex items-center gap-2">
-                  <span>✦</span> {item.title}
+                <div className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+                  <span>{item.title}</span>
                 </div>
-                <p className="text-xs text-[#4b5563] leading-relaxed font-medium">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium pl-6">
                   {item.description}
                 </p>
               </div>
@@ -85,11 +88,11 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({
         )}
       </div>
 
-      {/* Privacy Guarantee Footer Note */}
-      <div className="pastel-sage rounded-3xl p-5 border border-[#d4e5d4] flex items-center gap-3 text-xs text-[#2d5e2e]">
-        <ShieldCheck className="w-5 h-5 shrink-0" />
-        <span className="font-semibold">
-          100% Local & Privacy Safe: Insights are computed entirely on your device using Python rules — zero data sent to external AI servers.
+      {/* Privacy Guarantee Note */}
+      <div className="fintech-card p-4 bg-slate-50 border-slate-200 flex items-center gap-3 text-xs text-slate-600 font-medium">
+        <ShieldCheck className="w-5 h-5 text-teal-600 shrink-0" />
+        <span>
+          100% Local & Private: Insights are computed entirely on your device using Python rules — zero data sent to external AI servers.
         </span>
       </div>
     </div>

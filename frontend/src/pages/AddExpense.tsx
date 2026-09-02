@@ -4,7 +4,7 @@ import {
   PlusCircle,
   AlertCircle,
   CheckCircle2,
-  Paperclip,
+  FileSpreadsheet,
   Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -53,22 +53,23 @@ export const AddExpensePage: React.FC<AddExpenseProps> = ({
   const handleCsvSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setCsvError('Please choose a CSV file first.');
+      setCsvError('Please select a CSV file first.');
       return;
     }
 
     setUploading(true);
     setCsvError(null);
+    setCsvSuccessMsg(null);
 
     try {
       const res = await api.uploadCSV(file);
-      setCsvSuccessMsg(`Imported ${res.length} transactions successfully!`);
+      setCsvSuccessMsg(`Successfully imported ${res.length} transactions from CSV!`);
       setFile(null);
       setTimeout(() => {
         onSuccess();
       }, 1000);
     } catch (err: any) {
-      setCsvError(err.message || 'Failed to parse CSV file.');
+      setCsvError(err.message || 'Failed to upload CSV file.');
     } finally {
       setUploading(false);
     }
@@ -77,7 +78,7 @@ export const AddExpensePage: React.FC<AddExpenseProps> = ({
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!desc || !amount || Number(amount) <= 0) {
-      setManualError('Please enter a description and valid positive amount.');
+      setManualError('Please provide a description and a valid positive amount.');
       return;
     }
 
@@ -97,129 +98,137 @@ export const AddExpensePage: React.FC<AddExpenseProps> = ({
       setAmount('');
       onSuccess();
     } catch (err: any) {
-      setManualError(err.message || 'Failed to save expense.');
+      setManualError(err.message || 'Failed to add manual expense.');
     } finally {
       setSubmittingManual(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-20 md:pb-8">
+    <div className="space-y-6 max-w-3xl mx-auto pb-20 md:pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#ebdcd0]/60 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-black text-[#1f2937] tracking-tight">
-            Add Expense
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <PlusCircle className="w-6 h-6 text-teal-600" />
+            <span>Add Expenses / Upload CSV</span>
           </h1>
-          <p className="text-xs text-[#6b7280] font-medium mt-0.5">
-            Log expenses manually or drop a transaction CSV file.
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Import CSV statements or quickly log manual expense and income items.
           </p>
         </div>
+
+        <button
+          onClick={onLoadSample}
+          disabled={loadingSample}
+          className="px-4 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 font-bold text-xs flex items-center gap-2 min-h-[44px]"
+        >
+          <Sparkles className="w-4 h-4 text-teal-600" />
+          {loadingSample ? 'Loading...' : 'Load Sample Data'}
+        </button>
       </div>
 
-      {/* Switcher Buttons */}
+      {/* Tabs */}
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => setActiveTab('csv')}
-          className={`p-3.5 rounded-full border text-center font-bold text-xs transition-all min-h-[44px] ${
+          className={`p-3.5 rounded-xl border text-center font-bold text-xs transition-all min-h-[44px] flex items-center justify-center gap-2 ${
             activeTab === 'csv'
-              ? 'bg-[#1f2937] text-white border-[#1f2937] shadow-sm'
-              : 'pastel-cream border-[#ebdcd0] text-[#4b5563] hover:bg-[#eae3d8]'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+              : 'fintech-card text-slate-600 hover:bg-slate-50'
           }`}
         >
-          Upload CSV File
+          <FileSpreadsheet className="w-4 h-4 text-teal-400" />
+          <span>Upload CSV File</span>
         </button>
 
         <button
           onClick={() => setActiveTab('manual')}
-          className={`p-3.5 rounded-full border text-center font-bold text-xs transition-all min-h-[44px] ${
+          className={`p-3.5 rounded-xl border text-center font-bold text-xs transition-all min-h-[44px] flex items-center justify-center gap-2 ${
             activeTab === 'manual'
-              ? 'bg-[#1f2937] text-white border-[#1f2937] shadow-sm'
-              : 'pastel-cream border-[#ebdcd0] text-[#4b5563] hover:bg-[#eae3d8]'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+              : 'fintech-card text-slate-600 hover:bg-slate-50'
           }`}
         >
-          Manual Entry Form
+          <PlusCircle className="w-4 h-4 text-teal-400" />
+          <span>Manual Entry Form</span>
         </button>
       </div>
 
-      {/* CSV Dropzone Area (Requirement #18) */}
+      {/* Option A: CSV Upload */}
       {activeTab === 'csv' && (
-        <form onSubmit={handleCsvSubmit} className="pastel-cream rounded-3xl p-6 sm:p-8 border border-[#ebdcd0] space-y-5 shadow-sm">
+        <form onSubmit={handleCsvSubmit} className="fintech-card p-6 sm:p-8 space-y-5">
+          <div>
+            <h3 className="text-base font-extrabold text-slate-900">Upload CSV Statement</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Upload any CSV statement containing Date, Description, and Amount columns. Categorization occurs automatically on import.
+            </p>
+          </div>
+
           {csvError && (
-            <div className="p-4 rounded-2xl bg-[#fbebe6] border border-[#f5d5cc] text-[#993d29] text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5 font-medium">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{csvError}</span>
             </div>
           )}
 
           {csvSuccessMsg && (
-            <div className="p-4 rounded-2xl bg-[#edf4ed] border border-[#d4e5d4] text-[#2d5e2e] text-xs flex items-center gap-2 font-bold">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <div className="p-4 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs flex items-center gap-2 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
               <span>{csvSuccessMsg}</span>
             </div>
           )}
 
-          <div className="border-2 border-dashed border-[#ebdcd0] hover:border-[#1f2937] rounded-3xl p-8 text-center transition-all bg-[#faf7f2]/60">
+          <div className="border-2 border-dashed border-slate-300 hover:border-slate-800 rounded-2xl p-8 text-center transition-all bg-slate-50/50">
             <input
               type="file"
-              id="csv-dropzone-input"
+              id="csv-file-input"
               accept=".csv"
               onChange={handleFileChange}
               className="hidden"
             />
-            <label htmlFor="csv-dropzone-input" className="cursor-pointer flex flex-col items-center gap-3">
-              <div className="w-14 h-14 rounded-full bg-[#f3eefa] text-[#5c3882] flex items-center justify-center text-xl">
-                <Paperclip className="w-6 h-6" />
+            <label htmlFor="csv-file-input" className="cursor-pointer flex flex-col items-center gap-3">
+              <div className="p-3.5 rounded-xl bg-slate-200 text-slate-700">
+                <Upload className="w-7 h-7 text-teal-600" />
               </div>
-
-              <div className="space-y-1">
-                <div className="text-sm font-extrabold text-[#1f2937]">
-                  {file ? file.name : 'Drop your CSV here'}
-                </div>
-                <p className="text-xs text-[#6b7280]">
-                  {file ? `${(file.size / 1024).toFixed(1)} KB` : 'or choose a file from your computer'}
+              <div>
+                <span className="text-xs font-bold text-slate-900">
+                  {file ? file.name : 'Click or drop a CSV file here'}
+                </span>
+                <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                  {file ? `${(file.size / 1024).toFixed(1)} KB` : 'Supports Date, Description, Amount columns'}
                 </p>
               </div>
             </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onLoadSample}
-              disabled={loadingSample}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#edf4ed] text-[#2d5e2e] border border-[#d4e5d4] font-bold text-xs transition-all min-h-[44px] flex items-center justify-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              {loadingSample ? 'Loading...' : 'Try Sample Data'}
-            </button>
-
+          <div className="flex items-center justify-end pt-2">
             <button
               type="submit"
               disabled={uploading || !file}
-              className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#1f2937] hover:bg-[#374151] disabled:opacity-50 text-white font-bold text-xs shadow-md min-h-[44px]"
+              className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold text-xs shadow-sm min-h-[44px] flex items-center gap-2"
             >
-              {uploading ? 'Parsing CSV...' : 'Upload Transactions'}
+              {uploading ? 'Processing CSV...' : 'Upload & Categorize'}
             </button>
           </div>
         </form>
       )}
 
-      {/* Manual Expense Form */}
+      {/* Option B: Manual Expense Form */}
       {activeTab === 'manual' && (
-        <form onSubmit={handleManualSubmit} className="pastel-cream rounded-3xl p-6 sm:p-8 border border-[#ebdcd0] space-y-4 shadow-sm">
-          <h3 className="text-base font-extrabold text-[#1f2937]">Add Expense Record</h3>
+        <form onSubmit={handleManualSubmit} className="fintech-card p-6 sm:p-8 space-y-4">
+          <h3 className="text-base font-extrabold text-slate-900">Manual Expense Entry</h3>
 
           {manualError && (
-            <div className="p-3.5 rounded-2xl bg-[#fbebe6] border border-[#f5d5cc] text-[#993d29] text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{manualError}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-[#4b5563] uppercase tracking-wider mb-1">
-              Description
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+              Description / Merchant *
             </label>
             <input
               type="text"
@@ -227,49 +236,49 @@ export const AddExpensePage: React.FC<AddExpenseProps> = ({
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-2xl bg-[#faf7f2] border border-[#ebdcd0] text-[#1f2937] text-xs placeholder-[#9ca3af] focus:outline-none focus:border-[#1f2937] min-h-[44px]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 min-h-[44px]"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#4b5563] uppercase tracking-wider mb-1">
-                Amount (₹)
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                Amount (₹) *
               </label>
               <input
                 type="number"
                 step="0.01"
-                placeholder="₹450"
+                placeholder="450"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value ? parseFloat(e.target.value) : '')}
                 required
-                className="w-full px-4 py-3 rounded-2xl bg-[#faf7f2] border border-[#ebdcd0] text-[#1f2937] text-xs focus:outline-none focus:border-[#1f2937] min-h-[44px]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 min-h-[44px]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#4b5563] uppercase tracking-wider mb-1">
-                Date
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                Date *
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-2xl bg-[#faf7f2] border border-[#ebdcd0] text-[#1f2937] text-xs focus:outline-none focus:border-[#1f2937] min-h-[44px]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none focus:border-slate-900 min-h-[44px]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#4b5563] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
                 Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as 'expense' | 'income')}
-                className="w-full px-4 py-3 rounded-2xl bg-[#faf7f2] border border-[#ebdcd0] text-[#1f2937] text-xs font-semibold focus:outline-none focus:border-[#1f2937] min-h-[44px]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none focus:border-slate-900 min-h-[44px]"
               >
                 <option value="expense">Expense</option>
                 <option value="income">Income</option>
@@ -277,13 +286,13 @@ export const AddExpensePage: React.FC<AddExpenseProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#4b5563] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-[#faf7f2] border border-[#ebdcd0] text-[#1f2937] text-xs font-semibold focus:outline-none focus:border-[#1f2937] min-h-[44px]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none focus:border-slate-900 min-h-[44px]"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -292,13 +301,13 @@ export const AddExpensePage: React.FC<AddExpenseProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-end pt-3">
+          <div className="flex items-center justify-end pt-2">
             <button
               type="submit"
               disabled={submittingManual}
-              className="px-6 py-3 rounded-full bg-[#1f2937] hover:bg-[#374151] text-white font-bold text-xs shadow-md min-h-[44px]"
+              className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm min-h-[44px]"
             >
-              {submittingManual ? 'Saving Expense...' : 'Add Expense'}
+              {submittingManual ? 'Saving Expense...' : 'Save Expense Record'}
             </button>
           </div>
         </form>

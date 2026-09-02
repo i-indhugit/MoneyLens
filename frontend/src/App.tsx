@@ -73,7 +73,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#1f2937] flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -84,6 +84,7 @@ export function App() {
             monthly={monthly}
             anomalies={anomalies}
             insights={insights}
+            recentTransactions={transactions}
             onNavigate={setActiveTab}
             onLoadSample={handleLoadSample}
             loadingSample={loadingSample}
@@ -128,8 +129,8 @@ export function App() {
         )}
       </main>
 
-      <footer className="hidden md:block border-t border-[#ebdcd0] bg-[#faf7f2] py-4 text-center text-xs text-[#857567] font-medium">
-        moneylens ◉ — 100% Local & API-Free Pinterest-Style Personal Expense Assistant
+      <footer className="hidden md:block border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500 font-medium">
+        MoneyLens AI — 100% Local, Free & API-Free Personal Expense Assistant
       </footer>
     </div>
   );
