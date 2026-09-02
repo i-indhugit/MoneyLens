@@ -8,8 +8,9 @@ import {
   AskResponse
 } from '../types';
 
-// Use relative /api endpoint path so it works seamlessly on both web server and Android Capacitor PWA
-const API_BASE = '/api';
+// Dynamic API Base URL — relative '/api' by default for same-origin Vercel deployment,
+// or environment variable VITE_API_BASE_URL for mobile Android native WebView builds.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {

@@ -1,9 +1,14 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-import os
+from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./moneylens.db")
+# Determine Database URL (Support Vercel Serverless /tmp fallback)
+default_db = "sqlite:///./moneylens.db"
+if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    default_db = "sqlite:////tmp/moneylens.db"
+
+DATABASE_URL = os.getenv("DATABASE_URL", default_db)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 

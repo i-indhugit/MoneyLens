@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   Trash2,
@@ -6,7 +6,9 @@ import {
   ShieldCheck,
   Lock,
   AlertTriangle,
-  FileCheck
+  FileCheck,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -24,6 +26,31 @@ export const SettingsPage: React.FC<SettingsProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // PWA Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      alert("To install MoneyLens AI on your mobile or desktop device:\n\nChrome/Edge: Click the install icon in the address bar.\nSafari (iOS): Tap Share -> Add to Home Screen.");
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleDeleteAll = async () => {
     setDeleting(true);
@@ -48,7 +75,7 @@ export const SettingsPage: React.FC<SettingsProps> = ({
           <span>Settings & Data Management</span>
         </h1>
         <p className="text-xs text-slate-500 font-medium mt-0.5">
-          Manage local database storage, load sample dataset, and review privacy guarantees.
+          Manage local database storage, load sample dataset, install PWA app, and review privacy guarantees.
         </p>
       </div>
 
@@ -58,6 +85,27 @@ export const SettingsPage: React.FC<SettingsProps> = ({
         </div>
       )}
 
+      {/* PWA App Install Banner */}
+      <div className="fintech-card p-6 bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-teal-400 font-bold text-xs">
+            <Smartphone className="w-4 h-4" />
+            <span>PROGRESSIVE WEB APP (PWA)</span>
+          </div>
+          <h3 className="text-base font-extrabold text-white">Install MoneyLens AI App</h3>
+          <p className="text-xs text-slate-300 font-medium leading-relaxed">
+            Add MoneyLens AI directly to your home screen for full-screen standalone application access.
+          </p>
+        </div>
+
+        <button
+          onClick={handleInstallPWA}
+          className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs shadow-sm flex items-center gap-2 shrink-0 min-h-[44px]"
+        >
+          <Download className="w-4 h-4" /> Install App
+        </button>
+      </div>
+
       {/* Privacy Information Card */}
       <div className="fintech-card p-6 space-y-4">
         <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
@@ -65,7 +113,7 @@ export const SettingsPage: React.FC<SettingsProps> = ({
           <span>100% Local & Privacy Guarantee</span>
         </h3>
         <p className="text-xs text-slate-600 leading-relaxed font-medium">
-          MoneyLens AI operates completely offline on your device. Financial data is stored in your local SQLite database and never transmitted to external AI APIs.
+          MoneyLens AI operates completely offline on your device. Financial data is stored in your local database and never transmitted to external AI APIs.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
