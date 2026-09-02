@@ -24,8 +24,11 @@ from services.anomaly_detector import detect_unusual_transactions
 from services.insights import generate_financial_insights
 from services.question_engine import answer_user_question
 
-# Initialize SQLite database tables
-Base.metadata.create_all(bind=engine)
+# Initialize SQLite database tables safely
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Database initialization notice: {e}")
 
 app = FastAPI(
     title="MoneyLens AI API",
@@ -234,7 +237,8 @@ def ask_question(payload: AskRequest, db: Session = Depends(get_db)):
 # Register /api router
 app.include_router(api_router)
 
-# Serve built production React frontend dist files at / if built
-frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
-if os.path.exists(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+# Only mount StaticFiles when running locally (not on Vercel serverless CDN)
+if not os.getenv("VERCEL"):
+    frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
+    if os.path.exists(frontend_dist):
+        app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
