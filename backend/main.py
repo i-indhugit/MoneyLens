@@ -48,6 +48,7 @@ app.add_middleware(
 # Router for all backend API endpoints (/api/...)
 api_router = APIRouter(prefix="/api")
 
+@api_router.get("")
 @api_router.get("/")
 def api_root():
     return {
