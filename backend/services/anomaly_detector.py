@@ -59,7 +59,9 @@ def detect_unusual_transactions(transactions: List[Any]) -> Dict[str, Any]:
     else:
         # Statistical Outlier Detection Fallback (IQR & 2.5x Median Threshold)
         overall_mean = exp["amount"].mean()
-        overall_std = exp["amount"].std() or 1.0
+        overall_std = exp["amount"].std()
+        if pd.isna(overall_std) or overall_std == 0:
+            overall_std = 1.0
 
         for _, row in exp.iterrows():
             amt = float(row["amount"])
